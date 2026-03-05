@@ -52,7 +52,7 @@ class WarmItem extends AbstractModel implements WarmItemInterface
     /**
      * Get type
      *
-     * @return int|null
+     * @return string|null
      */
     public function getType()
     {
@@ -62,7 +62,7 @@ class WarmItem extends AbstractModel implements WarmItemInterface
     /**
      * Set type
      *
-     * @param int $type
+     * @param string $type
      * @return $this
      */
     public function setType($type)

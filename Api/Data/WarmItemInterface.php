@@ -41,14 +41,14 @@ interface WarmItemInterface
     /**
      * Get type
      *
-     * @return int|null
+     * @return string|null
      */
     public function getType();
 
     /**
      * Set type
      *
-     * @param int $type
+     * @param string $type
      * @return $this
      */
     public function setType($type);
