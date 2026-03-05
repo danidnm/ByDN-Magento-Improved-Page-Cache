@@ -22,6 +22,7 @@ class Warm extends \Symfony\Component\Console\Command\Command
     const PARAM_STORES = 'stores';
     const PARAM_IDS = 'ids';
     const PARAM_URL = 'url';
+    const PARAM_PRIORITY = 'priority';
 
     /**
      * @var \Bydn\ImprovedPageCache\Model\Queue\Warm\Publisher
@@ -80,6 +81,13 @@ class Warm extends \Symfony\Component\Console\Command\Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Specific URL to warm. Required if type is url. Ex: --' . self::PARAM_URL . '="http://example.com"'
+            ),
+            new InputOption(
+                self::PARAM_PRIORITY,
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Priority level (1-5). Default: 1. Ex: --' . self::PARAM_PRIORITY . '=5',
+                \Bydn\ImprovedPageCache\Model\WarmItem\Priority::LOWEST
             )
         ]);
         parent::configure();
@@ -97,6 +105,12 @@ class Warm extends \Symfony\Component\Console\Command\Command
         $type = $input->getOption(self::PARAM_TYPE);
         $ids = $input->getOption(self::PARAM_IDS);
         $url = $input->getOption(self::PARAM_URL);
+        $priority = (int) $input->getOption(self::PARAM_PRIORITY);
+
+        // Priority validation
+        if ($priority < \Bydn\ImprovedPageCache\Model\WarmItem\Priority::LOWEST || $priority > \Bydn\ImprovedPageCache\Model\WarmItem\Priority::HIGHEST) {
+            throw new \InvalidArgumentException('Priority must be a number between 1 and 5.');
+        }
 
         // Required Type validation
         if (!$type) {
@@ -144,7 +158,7 @@ class Warm extends \Symfony\Component\Console\Command\Command
         }
 
         // Send required entities to warm queue
-        $this->warmer->sendEntitiesToQueue($stores, $type, $warmData);
+        $this->warmer->sendEntitiesToQueue($stores, $type, $warmData, $priority);
 
         $output->writeln(sprintf('Successfully added "%s" to the warming queue.', $type));
 
