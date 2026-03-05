@@ -4,5 +4,8 @@
         <job name="bydn_improvedpagecache_warm" instance="Bydn\ImprovedPageCache\Cron\Warm" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
+        <job name="bydn_improvedpagecache_warm_priority" instance="Bydn\ImprovedPageCache\Cron\WarmPriority" method="execute">
+            <schedule>* * * * *</schedule>
+        </job>
     </group>
 </config>
