@@ -128,7 +128,9 @@ Class Publisher
      * @return void
      * @throws LocalizedException
      */
-    public function sendEntitiesToQueue($stores, $type, $data, $priority = WarmPriority::LOWEST) {
+    public function sendEntitiesToQueue($stores, $type, $data, $priority = WarmPriority::LOWEST)
+    {
+        $this->logger->info(sprintf('Adding entities to queue: Type=%s, Stores=%s, Priority=%s', $type, $stores, $priority));
 
         // Validate type
         $type = $this->validateType($type);
@@ -262,6 +264,8 @@ Class Publisher
         $warmItem->setInfo($info);
         $warmItem->setPriority($priority);
         $warmItem->setStatus(WarmStatus::NEW);
+
+        //$this->logger->debug(sprintf('Enqueuing entity: StoreId=%s, Type=%s, Info=%s, Priority=%s', $storeId, $type, $info, $priority));
 
         try {
             $this->warmItemResource->save($warmItem);

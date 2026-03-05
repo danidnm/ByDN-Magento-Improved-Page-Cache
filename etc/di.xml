@@ -30,4 +30,60 @@
         </arguments>
     </type>
 
+    <!-- Custom Logger -->
+    <virtualType name="BydnImprovedPageCacheLoggerHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">var/log/bydn_cache.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="BydnImprovedPageCacheLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">bydnImprovedPageCache</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="debug" xsi:type="object">BydnImprovedPageCacheLoggerHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Bydn\ImprovedPageCache\Console\Enqueue">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Console\Warm">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Model\Queue\Publisher">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Model\Queue\Consumer">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Model\WarmItemRepository">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Plugin\Amasty\Shopby\Helper\UrlBuilder">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Observer\WidgetsCache">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+    <type name="Bydn\ImprovedPageCache\Plugin\Magento\CacheInvalidate\Model\PurgeCache">
+        <arguments>
+            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
+        </arguments>
+    </type>
+
 </config>
