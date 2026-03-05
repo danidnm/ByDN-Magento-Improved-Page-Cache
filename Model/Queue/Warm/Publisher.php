@@ -7,6 +7,7 @@ use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCo
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Catalog\Model\Product\Attribute\Source\Status as ProductStatus;
 
@@ -49,6 +50,11 @@ Class Publisher
     private $categoryRepository;
 
     /**
+     * @var ProductResource
+     */
+    private $productResource;
+
+    /**
      * @var WarmItemResource
      */
     private $warmItemResource;
@@ -74,6 +80,7 @@ Class Publisher
      * @param ProductCollectionFactory $productCollectionFactory
      * @param PageCollectionFactory $pageCollectionFactory
      * @param CategoryRepositoryInterface $categoryRepository
+     * @param ProductResource $productResource
      * @param WarmItemResource $warmItemResource
      * @param WarmItemFactory $warmItemFactory
      * @param HelperConfig $helperConfig
@@ -85,6 +92,7 @@ Class Publisher
         ProductCollectionFactory $productCollectionFactory,
         PageCollectionFactory $pageCollectionFactory,
         CategoryRepositoryInterface $categoryRepository,
+        ProductResource $productResource,
         WarmItemResource $warmItemResource,
         WarmItemFactory $warmItemFactory,
         HelperConfig $helperConfig,
@@ -95,6 +103,7 @@ Class Publisher
         $this->productCollectionFactory = $productCollectionFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->categoryRepository = $categoryRepository;
+        $this->productResource = $productResource;
         $this->warmItemResource = $warmItemResource;
         $this->warmItemFactory = $warmItemFactory;
         $this->helperConfig = $helperConfig;
@@ -195,8 +204,19 @@ Class Publisher
         $stores = $this->extractStores($stores);
         $productIds = $this->extractIds(WarmTypes::PRODUCTS, $data);
         foreach ($stores as $storeId) {
+            $useCategoryPath = $this->helperConfig->useCategoryPathInProductUrl($storeId);
             foreach ($productIds as $productId) {
-                $this->enqueueEntity($storeId, WarmTypes::PRODUCTS, $productId, $priority);
+                if ($useCategoryPath) {
+                    $categoryIds = $this->productResource->getCategoryIds($productId);
+                    foreach ($categoryIds as $categoryId) {
+                        $info = $productId . ',' . $categoryId;
+                        $this->enqueueEntity($storeId, WarmTypes::PRODUCTS, $info, $priority);
+                    }
+                }
+                
+                // Always add product without category (or only one if useCategoryPath is false)
+                $info = $productId . ',0';
+                $this->enqueueEntity($storeId, WarmTypes::PRODUCTS, $info, $priority);
             }
         }
     }
