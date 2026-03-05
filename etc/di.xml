@@ -24,6 +24,7 @@
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
+                <item name="bydnCacheEnqueue" xsi:type="object">Bydn\ImprovedPageCache\Console\Enqueue</item>
                 <item name="bydnCacheWarm" xsi:type="object">Bydn\ImprovedPageCache\Console\Warm</item>
             </argument>
         </arguments>

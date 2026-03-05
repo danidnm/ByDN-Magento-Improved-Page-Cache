@@ -6,7 +6,6 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Cms\Api\PageRepositoryInterface;
-use Magento\Cms\Model\Page\Url as PageUrl;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem\CollectionFactory as WarmItemCollectionFactory;
@@ -38,11 +37,6 @@ class Consumer
     private $pageRepository;
 
     /**
-     * @var PageUrl
-     */
-    private $pageUrl;
-
-    /**
      * @var UrlInterface
      */
     private $urlBuilder;
@@ -72,7 +66,6 @@ class Consumer
      * @param ProductRepositoryInterface $productRepository
      * @param CategoryRepositoryInterface $categoryRepository
      * @param PageRepositoryInterface $pageRepository
-     * @param PageUrl $pageUrl
      * @param UrlInterface $urlBuilder
      * @param Curl $curl
      * @param WarmItemCollectionFactory $warmItemCollectionFactory
@@ -84,7 +77,6 @@ class Consumer
         ProductRepositoryInterface $productRepository,
         CategoryRepositoryInterface $categoryRepository,
         PageRepositoryInterface $pageRepository,
-        PageUrl $pageUrl,
         UrlInterface $urlBuilder,
         Curl $curl,
         WarmItemCollectionFactory $warmItemCollectionFactory,
@@ -95,7 +87,6 @@ class Consumer
         $this->productRepository = $productRepository;
         $this->categoryRepository = $categoryRepository;
         $this->pageRepository = $pageRepository;
-        $this->pageUrl = $pageUrl;
         $this->urlBuilder = $urlBuilder;
         $this->curl = $curl;
         $this->warmItemCollectionFactory = $warmItemCollectionFactory;
@@ -155,15 +146,17 @@ class Consumer
 
                 case WarmTypes::PAGES:
                     $page = $this->pageRepository->getById($info);
-                    return $this->pageUrl->getPageUrl($page);
+                    return $store->getBaseUrl() . $page->getIdentifier();
 
                 case WarmTypes::PRODUCTS:
                     $parts = explode(',', $info);
                     $productId = $parts[0];
                     $categoryId = isset($parts[1]) ? $parts[1] : 0;
                     
+                    /** @var \Magento\Catalog\Model\Product $product */
                     $product = $this->productRepository->getById($productId, false, $storeId);
                     if ($categoryId > 0) {
+                        /** @var \Magento\Catalog\Model\Category $category */
                         $category = $this->categoryRepository->get($categoryId, $storeId);
                         $product->setCategory($category);
                     }
@@ -174,6 +167,7 @@ class Consumer
                     $categoryId = $parts[0];
                     $pageNumber = isset($parts[1]) ? $parts[1] : 1;
                     
+                    /** @var \Magento\Catalog\Model\Category $category */
                     $category = $this->categoryRepository->get($categoryId, $storeId);
                     $url = $category->getUrl();
                     if ($pageNumber > 1) {
