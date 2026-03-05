@@ -20,6 +20,7 @@ use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Catalog\Model\Product\Attribute\Source\Status as ProductStatus;
+use Magento\Catalog\Model\Product\Visibility as ProductVisibility;
 
 use Bydn\ImprovedPageCache\Helper\Config as HelperConfig;
 use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem as WarmItemResource;
@@ -381,6 +382,13 @@ Class Publisher
         $collection = $this->productCollectionFactory->create();
         $collection->addAttributeToSelect('id');
         $collection->addAttributeToFilter('status', ['eq' => ProductStatus::STATUS_ENABLED]);
+        $collection->addAttributeToFilter('visibility', [
+            'in' => [
+                ProductVisibility::VISIBILITY_IN_CATALOG,
+                ProductVisibility::VISIBILITY_IN_SEARCH,
+                ProductVisibility::VISIBILITY_BOTH
+            ]
+        ]);
         return $collection->getAllIds();
     }
 

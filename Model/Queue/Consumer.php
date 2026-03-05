@@ -138,7 +138,7 @@ class Consumer
 
         $itemsBatch = [];
         $urlsBatch = [];
-        $concurrency = 1; //$this->helperConfig->getConcurrency();
+        $concurrency = $this->helperConfig->getConcurrency();
 
         foreach ($collection as $item) {
 
