@@ -12,6 +12,8 @@
 
 namespace Bydn\ImprovedPageCache\Observer;
 
+use Bydn\ImprovedPageCache\Helper\Config as HelperConfig;
+
 class WidgetsCache implements \Magento\Framework\Event\ObserverInterface
 {
     /**
@@ -35,6 +37,11 @@ class WidgetsCache implements \Magento\Framework\Event\ObserverInterface
     private $logger;
 
     /**
+     * @var HelperConfig
+     */
+    private $helperConfig;
+
+    /**
      * @param \Magento\CacheInvalidate\Model\PurgeCache $cacheInvalidator
      * @param \Psr\Log\LoggerInterface $logger
      */
@@ -42,12 +49,14 @@ class WidgetsCache implements \Magento\Framework\Event\ObserverInterface
         \Magento\Framework\App\Cache\Type\FrontendPool $cachePool,
         \Magento\Framework\App\Cache\StateInterface $cacheState,
         \Magento\CacheInvalidate\Model\PurgeCache $cacheInvalidator,
-        \Psr\Log\LoggerInterface $logger
+        \Psr\Log\LoggerInterface $logger,
+        HelperConfig $helperConfig
     ) {
         $this->cachePool = $cachePool;
         $this->cacheState = $cacheState;
         $this->cacheInvalidator = $cacheInvalidator;
         $this->logger = $logger;
+        $this->helperConfig = $helperConfig;
     }
 
     /**
@@ -135,6 +144,9 @@ class WidgetsCache implements \Magento\Framework\Event\ObserverInterface
      * @return void
      */
     private function refreshLayoutAndBlockCache() {
+        if (!$this->helperConfig->isEnabled()) {
+            return;
+        }
         $cacheType = 'block_html';
         if ($this->cacheState->isEnabled($cacheType)) {
             $this->logger->debug('Refresh block cache');
@@ -148,6 +160,10 @@ class WidgetsCache implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
+        if (!$this->helperConfig->isEnabled()) {
+            return;
+        }
+
         /** @var \Magento\Widget\Model\Widget\Instance */
         $widget = $observer->getDataObject();
 

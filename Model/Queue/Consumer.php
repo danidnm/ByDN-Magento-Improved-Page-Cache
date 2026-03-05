@@ -22,6 +22,7 @@ use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem\CollectionFactory as War
 use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem as WarmItemResource;
 use Bydn\ImprovedPageCache\Model\WarmItem\Status as WarmStatus;
 use Bydn\ImprovedPageCache\Model\WarmItem\Types as WarmTypes;
+use Bydn\ImprovedPageCache\Helper\Config as HelperConfig;
 use Psr\Log\LoggerInterface;
 
 class Consumer
@@ -67,6 +68,11 @@ class Consumer
     private $warmItemResource;
 
     /**
+     * @var HelperConfig
+     */
+    private $helperConfig;
+
+    /**
      * @var LoggerInterface
      */
     private $logger;
@@ -80,6 +86,7 @@ class Consumer
      * @param Curl $curl
      * @param WarmItemCollectionFactory $warmItemCollectionFactory
      * @param WarmItemResource $warmItemResource
+     * @param HelperConfig $helperConfig
      * @param LoggerInterface $logger
      */
     public function __construct(
@@ -91,6 +98,7 @@ class Consumer
         Curl $curl,
         WarmItemCollectionFactory $warmItemCollectionFactory,
         WarmItemResource $warmItemResource,
+        HelperConfig $helperConfig,
         LoggerInterface $logger
     ) {
         $this->storeManager = $storeManager;
@@ -101,6 +109,7 @@ class Consumer
         $this->curl = $curl;
         $this->warmItemCollectionFactory = $warmItemCollectionFactory;
         $this->warmItemResource = $warmItemResource;
+        $this->helperConfig = $helperConfig;
         $this->logger = $logger;
     }
 
@@ -112,6 +121,10 @@ class Consumer
      */
     public function execute($priority = null)
     {
+        if (!$this->helperConfig->isEnabled()) {
+            return;
+        }
+
         $collection = $this->warmItemCollectionFactory->create();
         $collection->addFieldToFilter('status', WarmStatus::NEW);
 

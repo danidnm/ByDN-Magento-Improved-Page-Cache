@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package     Bydn_ImprovedPageCache
+ * @author      Daniel Navarro <https://github.com/danidnm>
+ * @license     GPL-3.0-or-later
+ * @copyright   Copyright (c) 2025 Daniel Navarro
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="bydn_ai" translate="label" sortOrder="2500">
+            <label>AI Extensions (by DN)</label>
+        </tab>
+        <section id="bydn_improved_page_cache" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Improved Page Cache</label>
+            <tab>bydn_ai</tab>
+            <resource>Bydn_ImprovedPageCache::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General Configuration</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

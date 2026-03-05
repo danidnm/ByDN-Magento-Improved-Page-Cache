@@ -17,8 +17,24 @@ use Magento\Store\Model\ScopeInterface;
 
 class Config extends AbstractHelper
 {
+    public const XML_PATH_ENABLED = 'bydn_improved_page_cache/general/enabled';
     public const XML_PATH_GRID_PER_PAGE = 'catalog/frontend/grid_per_page';
     public const XML_PATH_PRODUCT_USE_CATEGORIES = 'catalog/seo/product_use_categories';
+
+    /**
+     * Check if module is enabled
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function isEnabled($storeId = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
 
     /**
      * Get grid per page configuration

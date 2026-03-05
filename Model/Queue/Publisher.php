@@ -130,6 +130,10 @@ Class Publisher
      */
     public function sendEntitiesToQueue($stores, $type, $data, $priority = WarmPriority::LOWEST)
     {
+        if (!$this->helperConfig->isEnabled()) {
+            return;
+        }
+
         $this->logger->info(sprintf('Adding entities to queue: Type=%s, Stores=%s, Priority=%s', $type, $stores, $priority));
 
         // Validate type

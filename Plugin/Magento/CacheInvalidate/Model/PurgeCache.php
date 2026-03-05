@@ -12,10 +12,6 @@
 
 namespace Bydn\ImprovedPageCache\Plugin\Magento\CacheInvalidate\Model;
 
-use Bydn\ImprovedPageCache\Model\Queue\Publisher;
-use Bydn\ImprovedPageCache\Model\WarmItem\Types;
-use Bydn\ImprovedPageCache\Model\WarmItem\Priority;
-
 class PurgeCache
 {
     /**
@@ -37,6 +33,11 @@ class PurgeCache
      * @var \Bydn\ImprovedPageCache\Model\Queue\Publisher
      */
     private $publisher;
+
+    /**
+     * @var \Bydn\ImprovedPageCache\Helper\Config
+     */
+    private $helperConfig;
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -65,20 +66,23 @@ class PurgeCache
      * @param \Magento\Framework\App\State $appState
      * @param \Magento\Framework\App\Request\Http $request
      * @param \Bydn\ImprovedPageCache\Helper\RequestInfo $requestInfo
-     * @param Publisher $publisher
+     * @param \Bydn\ImprovedPageCache\Model\Queue\Publisher $publisher
+     * @param \Bydn\ImprovedPageCache\Helper\Config $helperConfig
      * @param \Psr\Log\LoggerInterface $logger
      */
     public function __construct(
         \Magento\Framework\App\State $appState,
         \Magento\Framework\App\Request\Http $request,
         \Bydn\ImprovedPageCache\Helper\RequestInfo $requestInfo,
-        Publisher $publisher,
+        \Bydn\ImprovedPageCache\Model\Queue\Publisher $publisher,
+        \Bydn\ImprovedPageCache\Helper\Config $helperConfig,
         \Psr\Log\LoggerInterface $logger
     ) {
         $this->appState = $appState;
         $this->request = $request;
         $this->requestInfo = $requestInfo;
         $this->publisher = $publisher;
+        $this->helperConfig = $helperConfig;
         $this->logger = $logger;
     }
 
@@ -92,6 +96,10 @@ class PurgeCache
      */
     public function beforeSendPurgeRequest(\Magento\CacheInvalidate\Model\PurgeCache $subject, $tags)
     {
+        if (!$this->helperConfig->isEnabled()) {
+            return [$tags];
+        }
+
         // Ensure tags is array
         $tags = is_string($tags) ? [$tags] : $tags;
 
@@ -178,9 +186,9 @@ class PurgeCache
 
         // Enqueue all products and categories
         // Categories will be outdated longer but it is not a good idea to refresh all of the category pages because one product has changed
-        $this->enqueueProductIds(Priority::HIGH);
-        $this->enqueueCategoryIds(Priority::MEDIUM);
-        $this->enqueuePageIds(Priority::HIGH);
+        $this->enqueueProductIds(\Bydn\ImprovedPageCache\Model\WarmItem\Priority::HIGH);
+        $this->enqueueCategoryIds(\Bydn\ImprovedPageCache\Model\WarmItem\Priority::MEDIUM);
+        $this->enqueuePageIds(\Bydn\ImprovedPageCache\Model\WarmItem\Priority::HIGH);
 
         $this->logger->debug('Cache tags invalidating: ' . json_encode($newTags));
 
@@ -308,8 +316,8 @@ class PurgeCache
     private function enqueueProductIds($priority) {
         if (!empty($this->productIds)) {
             $this->publisher->sendEntitiesToQueue(
-                Publisher::ALL,
-                Types::PRODUCTS,
+                \Bydn\ImprovedPageCache\Model\Queue\Publisher::ALL,
+                \Bydn\ImprovedPageCache\Model\WarmItem\Types::PRODUCTS,
                 $this->productIds,
                 $priority);
         }
@@ -323,8 +331,8 @@ class PurgeCache
     private function enqueueCategoryIds($priority) {
         if (!empty($this->categoryIds)) {
             $this->publisher->sendEntitiesToQueue(
-                Publisher::ALL,
-                Types::CATEGORIES,
+                \Bydn\ImprovedPageCache\Model\Queue\Publisher::ALL,
+                \Bydn\ImprovedPageCache\Model\WarmItem\Types::CATEGORIES,
                 $this->categoryIds,
                 $priority);
         }
@@ -338,8 +346,8 @@ class PurgeCache
     private function enqueuePageIds($priority) {
         if (!empty($this->pageIds)) {
             $this->publisher->sendEntitiesToQueue(
-                Publisher::ALL,
-                Types::PAGES,
+                \Bydn\ImprovedPageCache\Model\Queue\Publisher::ALL,
+                \Bydn\ImprovedPageCache\Model\WarmItem\Types::PAGES,
                 $this->pageIds,
                 $priority);
         }

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package     Bydn_ImprovedPageCache
+ * @author      Daniel Navarro <https://github.com/danidnm>
+ * @license     GPL-3.0-or-later
+ * @copyright   Copyright (c) 2025 Daniel Navarro
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <bydn_improved_page_cache>
+            <general>
+                <enabled>1</enabled>
+            </general>
+        </bydn_improved_page_cache>
+    </default>
+</config>
