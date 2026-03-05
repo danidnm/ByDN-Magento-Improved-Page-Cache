@@ -2,9 +2,7 @@
 
 namespace Bydn\ImprovedPageCache\Model\Queue\Warm;
 
-use Magento\Store\Model\StoreManagerInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status as ProductStatus;
-use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
 use Magento\Framework\Exception\LocalizedException;
 
 use Bydn\ImprovedPageCache\Model\WarmItem\Types as WarmTypes;
@@ -182,7 +180,7 @@ Class Publisher
      */
     private function enqueueEntity($storeId, $type, $info, $priority)
     {
-        if ($this->checkDuplicated($storeId, $type, $info)) {
+        if ($this->checkDuplicated($storeId, $type, $info, $priority)) {
             return;
         }
 
@@ -204,7 +202,7 @@ Class Publisher
     /**
      * Check if a record with same parameters already exists
      */
-    private function checkDuplicated($storeId, $type, $info)
+    private function checkDuplicated($storeId, $type, $info, $priority)
     {
         $connection = $this->warmItemResource->getConnection();
         $select = $connection->select()
@@ -212,7 +210,8 @@ Class Publisher
             ->where('store_id = ?', $storeId)
             ->where('type = ?', $type)
             ->where('info = ?', $info)
-            ->where('status = ?', WarmStatus::NEW);
+            ->where('status = ?', WarmStatus::NEW)
+            ->where('priority >= ?', $priority);
 
         return (bool)$connection->fetchOne($select);
     }
