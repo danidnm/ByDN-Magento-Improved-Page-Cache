@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Plugins -->
+    <!-- Same page cache for logged in and guest -->
+    <type name="Magento\Framework\App\Http\Context">
+        <plugin name="bydn-improved-page-cache-x-vary-fix" type="Bydn\ImprovedPageCache\Plugin\Magento\Framework\App\Http\Context"/>
+    </type>
+    <!--  Warm Varnish page after purge -->
+    <type name="\Magento\CacheInvalidate\Model\PurgeCache">
+        <plugin name="bydn-improved-page-cache-invalidate-cache-to-warm" type="Bydn\ImprovedPageCache\Plugin\Magento\CacheInvalidate\Model\PurgeCache"/>
+    </type>
+    <!--  Layered navigation URL sniffer -->
+    <type name="\Amasty\Shopby\Helper\UrlBuilder">
+        <plugin name="bydn-improved-page-cache-layered-url-sniffer" type="Bydn\ImprovedPageCache\Plugin\Amasty\Shopby\Helper\UrlBuilder"/>
+    </type>
+    <!-- Do not refresh varnish with any cache type -->
+    <type name="Magento\CacheInvalidate\Observer\FlushAllCacheObserver">
+        <plugin name="do-not-always-refresh-varnish"  type="Bydn\ImprovedPageCache\Plugin\Magento\CacheInvalidate\Observer\FlushAllCacheObserver" />
+    </type>
+
+    <!-- Commands -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="vivoCacheWarm" xsi:type="object">Bydn\ImprovedPageCache\Console\Warm</item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>

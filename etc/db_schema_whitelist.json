@@ -1,0 +1,17 @@
+{
+    "bydn_warm_item": {
+        "column": {
+            "entity_id": true,
+            "type": true,
+            "info": true,
+            "store_id": true,
+            "priority": true,
+            "status": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}

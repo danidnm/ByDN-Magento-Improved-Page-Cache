@@ -1,0 +1,10 @@
+- Warming the páginas estáticas
+- Detectar páginas estáticas limpiadas y añadirlas a prioridad
+- Filtrar los tags de cms_b y cms_p y añadir a la cola
+- Implementar Cron para añadir a la cola del calentador en lugar de forzar hacerlo por comando (home, categorías, productos, cms pages)
+- Al exportar VCL hacer que exporte header para Refresh
+- Reporting
+
+- Opciones de configuración
+    - "No uso grupos de cliente"
+    -

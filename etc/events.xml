@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="widget_widget_instance_save_before">
+        <observer name="widgets-cache" instance="Bydn\ImprovedPageCache\Observer\WidgetsCache" />
+    </event>
+    <event name="widget_widget_instance_delete_before">
+        <observer name="widgets-cache-delete" instance="Bydn\ImprovedPageCache\Observer\WidgetsCache" />
+    </event>
+</config>

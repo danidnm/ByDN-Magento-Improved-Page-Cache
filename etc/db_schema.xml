@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="bydn_warm_item">
+        <column xsi:type="int" name="entity_id" nullable="false" identity="true" padding="10" unsigned="true" comment="Id"/>
+        <column xsi:type="int" name="type" nullable="false" unsigned="true" comment="Page type"/>
+        <column xsi:type="text" name="info" nullable="false" comment="Warm extra info"/>
+        <column xsi:type="int" name="store_id" nullable="false" unsigned="true" comment="Store ID"/>
+        <column xsi:type="int" name="priority" nullable="false" unsigned="true" comment="Warm priority"/>
+        <column xsi:type="int" name="status" nullable="false" unsigned="true" comment="Warm status"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation date"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update date"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+</schema>
