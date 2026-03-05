@@ -136,14 +136,57 @@ class Consumer
         $collection->setOrder('created_at', 'ASC');
         $collection->setPageSize(500);
 
+        $itemsBatch = [];
+        $urlsBatch = [];
+        $concurrency = 1; //$this->helperConfig->getConcurrency();
+
         foreach ($collection as $item) {
+
+            // Get URL for this item
             $url = $this->generateUrl($item);
-            if ($url) {
+
+            // No URL => error
+            if (!$url) {
+                $item->setStatus(WarmStatus::ERROR);
+                $this->warmItemResource->save($item);
+                continue;
+            }
+
+            // No concurrency => Launch inmediatelly
+            if ($concurrency == 1) {
                 $status = $this->warmUrl($url);
                 $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
-            } else {
-                $item->setStatus(WarmStatus::ERROR);
+                $this->warmItemResource->save($item);
             }
+            else {
+                $itemsBatch[] = $item;
+                $urlsBatch[] = $url;
+                if (count($urlsBatch) >= $concurrency) {
+                    $this->processBatch($itemsBatch, $urlsBatch);
+                    $itemsBatch = [];
+                    $urlsBatch = [];
+                }
+            }
+        }
+
+        if (!empty($urlsBatch)) {
+            $this->processBatch($itemsBatch, $urlsBatch);
+        }
+    }
+
+    /**
+     * Process a batch of URLs
+     *
+     * @param array $items
+     * @param array $urls
+     * @return void
+     */
+    private function processBatch($items, $urls)
+    {
+        $results = $this->warmUrlsParallel($urls);
+        foreach ($items as $index => $item) {
+            $status = isset($results[$index]) ? $results[$index] : false;
+            $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
             $this->warmItemResource->save($item);
         }
     }
@@ -207,6 +250,63 @@ class Consumer
         }
 
         return null;
+    }
+
+    /**
+     * Warm several URLs in parallel
+     *
+     * @param array $urls
+     * @return array
+     */
+    private function warmUrlsParallel($urls)
+    {
+        $multiHandle = curl_multi_init();
+        $curlHandles = [];
+        $results = [];
+
+        foreach ($urls as $index => $url) {
+            $this->logger->info('Warming Parallel: ' . $url);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HEADER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Magento-Cache-Refresh: 1']);
+            
+            curl_multi_add_handle($multiHandle, $ch);
+            $curlHandles[$index] = $ch;
+        }
+
+        $active = null;
+        do {
+            $mrc = curl_multi_exec($multiHandle, $active);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+        while ($active && $mrc == CURLM_OK) {
+            if (curl_multi_select($multiHandle) != -1) {
+                do {
+                    $mrc = curl_multi_exec($multiHandle, $active);
+                } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+            }
+        }
+
+        foreach ($curlHandles as $index => $ch) {
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $results[$index] = ($httpCode == 200);
+            
+            if ($httpCode != 200) {
+                $this->logger->error(sprintf('Error warming %s (Status: %s)', $urls[$index], $httpCode));
+            } else {
+                $this->logger->info(sprintf('Done: %s', $urls[$index]));
+            }
+
+            curl_multi_remove_handle($multiHandle, $ch);
+            curl_close($ch);
+        }
+
+        curl_multi_close($multiHandle);
+
+        return $results;
     }
 
     /**

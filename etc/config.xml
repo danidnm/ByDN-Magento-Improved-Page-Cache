@@ -12,6 +12,7 @@
         <bydn_improved_page_cache>
             <general>
                 <enabled>1</enabled>
+                <concurrency>5</concurrency>
             </general>
         </bydn_improved_page_cache>
     </default>

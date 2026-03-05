@@ -18,6 +18,7 @@ use Magento\Store\Model\ScopeInterface;
 class Config extends AbstractHelper
 {
     public const XML_PATH_ENABLED = 'bydn_improved_page_cache/general/enabled';
+    public const XML_PATH_CONCURRENCY = 'bydn_improved_page_cache/general/concurrency';
     public const XML_PATH_GRID_PER_PAGE = 'catalog/frontend/grid_per_page';
     public const XML_PATH_PRODUCT_USE_CATEGORIES = 'catalog/seo/product_use_categories';
 
@@ -34,6 +35,22 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Get concurrency level
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getConcurrency($storeId = null)
+    {
+        $value = (int)$this->scopeConfig->getValue(
+            self::XML_PATH_CONCURRENCY,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        return $value > 0 ? $value : 5;
     }
 
     /**
