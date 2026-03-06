@@ -354,6 +354,8 @@ class Consumer
      */
     private function warmUrlsParallel($urls)
     {
+        $start_time = microtime(true);
+
         // Initialize a cURL multi handle to manage multiple requests simultaneously
         $multiHandle = curl_multi_init();
         $curlHandles = [];
@@ -381,6 +383,9 @@ class Consumer
             curl_multi_select($multiHandle);
         } while ($active > 0);
 
+        $end_time = microtime(true);
+        $execution_time = ($end_time - $start_time);
+
         // All requests are done. Now extract results and clean up.
         foreach ($curlHandles as $index => $ch) {
 
@@ -401,6 +406,8 @@ class Consumer
 
         // Close the multi handle itself
         curl_multi_close($multiHandle);
+
+        $this->logger->info('Batch done in: ' . $execution_time . ' seconds');
 
         return $results;
     }
