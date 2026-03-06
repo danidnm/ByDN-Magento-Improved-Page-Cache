@@ -16,6 +16,7 @@ use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem as WarmItemResource;
 use Bydn\ImprovedPageCache\Model\Source\WarmItem\Status;
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 class Summary extends Template
 {
@@ -25,21 +26,29 @@ class Summary extends Template
     private $warmItemResource;
 
     /**
+     * @var TimezoneInterface
+     */
+    private $timezone;
+
+    /**
      * @var array|null
      */
     private $countsByStatus = null;
 
     /**
      * @param WarmItemResource $warmItemResource
+     * @param TimezoneInterface $timezone
      * @param Context $context
      * @param array $data
      */
     public function __construct(
         WarmItemResource $warmItemResource,
+        TimezoneInterface $timezone,
         Context $context,
         array $data = []
     ) {
         $this->warmItemResource = $warmItemResource;
+        $this->timezone = $timezone;
         parent::__construct($context, $data);
     }
 
@@ -97,5 +106,57 @@ class Summary extends Template
     public function getErrorCount(): int
     {
         return $this->getCountsByStatus()[Status::ERROR] ?? 0;
+    }
+
+    /**
+     * Returns the most recent updated_at among DONE items, formatted in store timezone.
+     * Returns null if no DONE items exist.
+     *
+     * @return string|null
+     */
+    public function getLastRunDate(): ?string
+    {
+        $connection = $this->warmItemResource->getConnection();
+        $select = $connection->select()
+            ->from($this->warmItemResource->getMainTable(), ['date' => new \Zend_Db_Expr('MAX(updated_at)')])
+            ->where('status = ?', Status::DONE);
+
+        $date = $connection->fetchOne($select);
+
+        if (!$date) {
+            return null;
+        }
+
+        return $this->timezone->formatDateTime(
+            new \DateTime($date),
+            \IntlDateFormatter::MEDIUM,
+            \IntlDateFormatter::SHORT
+        );
+    }
+
+    /**
+     * Returns the oldest created_at among NEW items, formatted in store timezone.
+     * Returns null if no NEW items exist.
+     *
+     * @return string|null
+     */
+    public function getOldestNewDate(): ?string
+    {
+        $connection = $this->warmItemResource->getConnection();
+        $select = $connection->select()
+            ->from($this->warmItemResource->getMainTable(), ['date' => new \Zend_Db_Expr('MIN(created_at)')])
+            ->where('status = ?', Status::NEW);
+
+        $date = $connection->fetchOne($select);
+
+        if (!$date) {
+            return null;
+        }
+
+        return $this->timezone->formatDateTime(
+            new \DateTime($date),
+            \IntlDateFormatter::MEDIUM,
+            \IntlDateFormatter::SHORT
+        );
     }
 }

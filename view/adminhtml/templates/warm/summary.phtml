@@ -18,6 +18,18 @@
         <span class="bydn-warm-summary__count"><?= (int)$block->getErrorCount() ?></span>
         <span class="bydn-warm-summary__label"><?= $block->escapeHtml(__('Error')) ?></span>
     </div>
+    <div class="bydn-warm-summary__card bydn-warm-summary__card--lastrun">
+        <span class="bydn-warm-summary__date">
+            <?= $block->escapeHtml($block->getLastRunDate() ?? __('—')) ?>
+        </span>
+        <span class="bydn-warm-summary__label"><?= $block->escapeHtml(__('Last Run')) ?></span>
+    </div>
+    <div class="bydn-warm-summary__card bydn-warm-summary__card--oldest">
+        <span class="bydn-warm-summary__date">
+            <?= $block->escapeHtml($block->getOldestNewDate() ?? __('—')) ?>
+        </span>
+        <span class="bydn-warm-summary__label"><?= $block->escapeHtml(__('Oldest Record')) ?></span>
+    </div>
 </div>
 <style>
     .bydn-warm-summary {
@@ -28,7 +40,7 @@
     }
     .bydn-warm-summary__card {
         display: flex;
-        flex-grow: 1
+        flex-grow: 1;
         flex-direction: column;
         align-items: center;
         justify-content: center;
@@ -60,4 +72,13 @@
     .bydn-warm-summary__card--done      .bydn-warm-summary__count { color: #185a31; }
     .bydn-warm-summary__card--error     { border-top: 4px solid #b4002d; }
     .bydn-warm-summary__card--error     .bydn-warm-summary__count { color: #b4002d; }
+    .bydn-warm-summary__card--lastrun   { border-top: 4px solid #514e60; }
+    .bydn-warm-summary__card--oldest    { border-top: 4px solid #514e60; }
+    .bydn-warm-summary__date {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: #514e60;
+        text-align: center;
+    }
 </style>
