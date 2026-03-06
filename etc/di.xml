@@ -81,11 +81,6 @@
             <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
         </arguments>
     </type>
-    <type name="Bydn\ImprovedPageCache\Observer\WidgetsCache">
-        <arguments>
-            <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
-        </arguments>
-    </type>
     <type name="Bydn\ImprovedPageCache\Plugin\Magento\CacheInvalidate\Model\PurgeCache">
         <arguments>
             <argument name="logger" xsi:type="object">BydnImprovedPageCacheLogger</argument>
