@@ -84,6 +84,31 @@ class Consumer
     private $logger;
 
     /**
+     * Items collection to process
+     */
+    private $itemCollection;
+
+    /**
+     * Currently emulated store id
+     */
+    private $currentEmulatedStoreId = null;
+
+    /**
+     * Concurrency level
+     */
+    private $concurrency = 1;
+
+    /**
+     * Current batch of items
+     */
+    private $batchItems = [];
+
+    /**
+     * Current batch of URLs
+     */
+    private $batchUrls = [];
+
+    /**
      * @param StoreManagerInterface $storeManager
      * @param Emulation $emulation
      * @param ProductRepositoryInterface $productRepository
@@ -131,51 +156,66 @@ class Consumer
      */
     public function execute($minPriority = null, $maxPriority = null)
     {
+        // Check module is enabled
         if (!$this->helperConfig->isEnabled()) {
             return;
         }
 
+        // Get pending items with priority limits
         $collection = $this->warmItemCollectionFactory->create();
         $collection->addFieldToFilter('status', WarmStatus::NEW);
-
         if ($minPriority !== null) {
             $collection->addFieldToFilter('priority', ['gteq' => $minPriority]);
         }
-
         if ($maxPriority !== null) {
             $collection->addFieldToFilter('priority', ['lteq' => $maxPriority]);
         }
-
         $collection->setOrder('priority', 'DESC');
         $collection->setOrder('created_at', 'ASC');
-        $collection->setPageSize(500);
+        $collection->setPageSize(250);
 
-        $itemsBatch = [];
-        $urlsBatch = [];
-        $concurrency = $this->helperConfig->getConcurrency();
-        $currentEmulatedStoreId = null;
+        // Items collection ARRAY
+        $this->itemCollection = $collection->getItems();
 
-        foreach ($collection as $item) {
+        // No store for the moment
+        $this->currentEmulatedStoreId = null;
+
+        // Set concurrency level
+        $this->concurrency = $this->helperConfig->getConcurrency();
+
+        // Iterate until no more batches
+        while ($this->extractNextBatchWithEmulation()) {
+            $this->processBatch();
+        }
+
+        // Stop emulation
+        $this->manageEmulation(null);
+    }
+
+    /**
+     * Extract next batch of items from queue (up to concurrency level)
+     */
+    private function extractNextBatchWithEmulation()
+    {
+        // Prepare vars for batches
+        $this->batchItems = [];
+        $this->batchUrls = [];
+
+        // Extact items until max concurrency reached
+        while ($item = array_shift($this->itemCollection)) {
+
+            // Get item store id and check module enbled for store. If not, mark as disabled.
             $storeId = $item->getStoreId();
-
             if (!$this->helperConfig->isEnabled($storeId)) {
                 $item->setStatus(WarmStatus::DISABLED);
                 $this->warmItemResource->save($item);
                 continue;
             }
 
-            if ($currentEmulatedStoreId === null) {
-                // First item, start emulation
-                $this->emulation->startEnvironmentEmulation($storeId);
-                $currentEmulatedStoreId = $storeId;
-            } elseif ($currentEmulatedStoreId != $storeId) {
-                // Store changed, restart emulation
-                $this->emulation->stopEnvironmentEmulation();
-                $this->emulation->startEnvironmentEmulation($storeId);
-                $currentEmulatedStoreId = $storeId;
-            }
+            // Start emulation if not started or store changed
+            $this->currentEmulatedStoreId = $this->manageEmulation($storeId);
 
-            // Get URL for this item
+            // Generate URL
             $url = $this->generateUrl($item);
 
             // No URL => error
@@ -185,48 +225,17 @@ class Consumer
                 continue;
             }
 
-            // No concurrency => Launch inmediatelly
-            if ($concurrency == 1) {
-                $status = $this->warmUrl($url);
-                $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
-                $this->warmItemResource->save($item);
-            }
-            else {
-                $itemsBatch[] = $item;
-                $urlsBatch[] = $url;
-                if (count($urlsBatch) >= $concurrency) {
-                    $this->processBatch($itemsBatch, $urlsBatch);
-                    $itemsBatch = [];
-                    $urlsBatch = [];
-                }
+            // Add to batch
+            $this->batchItems[] = $item;
+            $this->batchUrls[] = $url;
+
+            // If batch is full, break
+            if (count($this->batchItems) >= $this->concurrency) {
+                break;
             }
         }
 
-        // Stop emulation if it was started
-        if ($currentEmulatedStoreId !== null) {
-            $this->emulation->stopEnvironmentEmulation();
-        }
-
-        if (!empty($urlsBatch)) {
-            $this->processBatch($itemsBatch, $urlsBatch);
-        }
-    }
-
-    /**
-     * Process a batch of URLs
-     *
-     * @param array $items
-     * @param array $urls
-     * @return void
-     */
-    private function processBatch($items, $urls)
-    {
-        $results = $this->warmUrlsParallel($urls);
-        foreach ($items as $index => $item) {
-            $status = isset($results[$index]) ? $results[$index] : false;
-            $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
-            $this->warmItemResource->save($item);
-        }
+        return count($this->batchItems) > 0;
     }
 
     /**
@@ -288,6 +297,53 @@ class Consumer
         }
 
         return null;
+    }
+
+    /**
+     * Manages emulation changing only when store changes
+     */
+    private function manageEmulation($storeId)
+    {
+        // Manage stop emulation
+        if ($storeId == 0) {
+            if ($this->currentEmulatedStoreId !== null) {
+                $this->emulation->stopEnvironmentEmulation();
+            }
+            return null;
+        }
+        
+        // Manage start or change emulation
+        if ($this->currentEmulatedStoreId === null) {
+            $this->emulation->startEnvironmentEmulation($storeId);
+        } 
+        else if ($this->currentEmulatedStoreId != $storeId) {
+            $this->emulation->stopEnvironmentEmulation();
+            $this->emulation->startEnvironmentEmulation($storeId);
+        }
+        return $storeId;
+    }
+    /**
+     * Process a batch of URLs
+     *
+     * @return void
+     */
+    private function processBatch()
+    {
+        if ($this->concurrency > 1) {
+            $results = $this->warmUrlsParallel($this->batchUrls);
+            foreach ($this->batchItems as $index => $item) {
+                $status = isset($results[$index]) ? $results[$index] : false;
+                $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
+                $this->warmItemResource->save($item);
+            }
+        }
+        else {
+            $item = array_shift($this->batchItems);
+            $url = array_shift($this->batchUrls);
+            $status = $this->warmUrl($url);
+            $item->setStatus($status ? WarmStatus::DONE : WarmStatus::ERROR);
+            $this->warmItemResource->save($item);
+        }
     }
 
     /**
