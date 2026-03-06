@@ -21,6 +21,21 @@
         </arguments>
     </type>
 
+    <!-- WarmItem grid listing data provider -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="cache_warm_item_grid_data_source" xsi:type="string">WarmItemGridCollection</item>
+            </argument>
+        </arguments>
+    </type>
+    <virtualType name="WarmItemGridCollection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">bydn_warm_item</argument>
+            <argument name="resourceModel" xsi:type="string">Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem\Collection</argument>
+        </arguments>
+    </virtualType>
+
     <!-- Custom Logger -->
     <virtualType name="BydnImprovedPageCacheLoggerHandler" type="Magento\Framework\Logger\Handler\Base">
         <arguments>
