@@ -23,6 +23,7 @@ use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem as WarmItemResource;
 use Bydn\ImprovedPageCache\Model\WarmItem\Status as WarmStatus;
 use Bydn\ImprovedPageCache\Model\WarmItem\Types as WarmTypes;
 use Bydn\ImprovedPageCache\Helper\Config as HelperConfig;
+use Magento\Store\Model\App\Emulation;
 use Psr\Log\LoggerInterface;
 
 class Consumer
@@ -73,6 +74,11 @@ class Consumer
     private $helperConfig;
 
     /**
+     * @var Emulation
+     */
+    private $emulation;
+
+    /**
      * @var LoggerInterface
      */
     private $logger;
@@ -99,6 +105,7 @@ class Consumer
         WarmItemCollectionFactory $warmItemCollectionFactory,
         WarmItemResource $warmItemResource,
         HelperConfig $helperConfig,
+        Emulation $emulation,
         LoggerInterface $logger
     ) {
         $this->storeManager = $storeManager;
@@ -110,6 +117,7 @@ class Consumer
         $this->warmItemCollectionFactory = $warmItemCollectionFactory;
         $this->warmItemResource = $warmItemResource;
         $this->helperConfig = $helperConfig;
+        $this->emulation = $emulation;
         $this->logger = $logger;
     }
 
@@ -139,8 +147,21 @@ class Consumer
         $itemsBatch = [];
         $urlsBatch = [];
         $concurrency = $this->helperConfig->getConcurrency();
+        $currentEmulatedStoreId = null;
 
         foreach ($collection as $item) {
+            $storeId = $item->getStoreId();
+
+            if ($currentEmulatedStoreId === null) {
+                // First item, start emulation
+                $this->emulation->startEnvironmentEmulation($storeId);
+                $currentEmulatedStoreId = $storeId;
+            } elseif ($currentEmulatedStoreId != $storeId) {
+                // Store changed, restart emulation
+                $this->emulation->stopEnvironmentEmulation();
+                $this->emulation->startEnvironmentEmulation($storeId);
+                $currentEmulatedStoreId = $storeId;
+            }
 
             // Get URL for this item
             $url = $this->generateUrl($item);
@@ -167,6 +188,11 @@ class Consumer
                     $urlsBatch = [];
                 }
             }
+        }
+
+        // Stop emulation if it was started
+        if ($currentEmulatedStoreId !== null) {
+            $this->emulation->stopEnvironmentEmulation();
         }
 
         if (!empty($urlsBatch)) {
