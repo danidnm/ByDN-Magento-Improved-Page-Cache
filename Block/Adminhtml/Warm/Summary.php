@@ -26,6 +26,11 @@ class Summary extends Template
     private $warmItemResource;
 
     /**
+     * @var \Bydn\ImprovedPageCache\Model\ResourceModel\WarmStats
+     */
+    private $warmStatsResource;
+
+    /**
      * @var TimezoneInterface
      */
     private $timezone;
@@ -37,19 +42,67 @@ class Summary extends Template
 
     /**
      * @param WarmItemResource $warmItemResource
+     * @param \Bydn\ImprovedPageCache\Model\ResourceModel\WarmStats $warmStatsResource
      * @param TimezoneInterface $timezone
      * @param Context $context
      * @param array $data
      */
     public function __construct(
         WarmItemResource $warmItemResource,
+        \Bydn\ImprovedPageCache\Model\ResourceModel\WarmStats $warmStatsResource,
         TimezoneInterface $timezone,
         Context $context,
         array $data = []
     ) {
         $this->warmItemResource = $warmItemResource;
+        $this->warmStatsResource = $warmStatsResource;
         $this->timezone = $timezone;
         parent::__construct($context, $data);
+    }
+
+    /**
+     * Get chart data based on period
+     *
+     * @param string $period
+     * @return array
+     */
+    public function getChartData(string $period = '24h'): array
+    {
+        $connection = $this->warmStatsResource->getConnection();
+        $select = $connection->select()
+            ->from($this->warmStatsResource->getMainTable());
+
+        $now = new \DateTime();
+        if ($period === 'today') {
+            $date = clone $now;
+            $date->setTime(0, 0, 0);
+            $select->where('created_at >= ?', $date->format('Y-m-d H:i:s'));
+        } elseif ($period === '7days') {
+            $date = clone $now;
+            $date->sub(new \DateInterval('P7D'));
+            $select->where('created_at >= ?', $date->format('Y-m-d H:i:s'));
+        } else { // 24h
+            $date = clone $now;
+            $date->sub(new \DateInterval('PT24H'));
+            $select->where('created_at >= ?', $date->format('Y-m-d H:i:s'));
+        }
+
+        $select->order('created_at ASC');
+        $rows = $connection->fetchAll($select);
+
+        $data = [];
+        foreach ($rows as $row) {
+            $createdAt = $this->timezone->date(new \DateTime($row['created_at']));
+            $data[] = [
+                'date' => $createdAt->format('H:i'),
+                'full_date' => $createdAt->format('Y-m-d H:i:s'),
+                'pending' => (int)$row['pending_items'],
+                'done' => (int)$row['done_items'],
+                'error' => (int)$row['error_items']
+            ];
+        }
+
+        return $data;
     }
 
     /**

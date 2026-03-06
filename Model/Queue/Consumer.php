@@ -147,6 +147,8 @@ class Consumer
      */
     public function execute($minPriority = null, $maxPriority = null)
     {
+        $this->logger->info('Consumer execution started', ['min_priority' => $minPriority, 'max_priority' => $maxPriority]);
+        
         // Check module is enabled
         if (!$this->helperConfig->isEnabled()) {
             return;

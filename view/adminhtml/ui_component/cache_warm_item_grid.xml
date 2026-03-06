@@ -12,6 +12,9 @@
         <deps>
             <dep>cache_warm_item_grid.cache_warm_item_grid_data_source</dep>
         </deps>
+        <listingDefaultSortOrder>
+            <field name="entity_id">desc</field>
+        </listingDefaultSortOrder>
     </settings>
     <dataSource name="cache_warm_item_grid_data_source">
         <argument name="dataProvider" xsi:type="configurableObject">

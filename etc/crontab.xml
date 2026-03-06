@@ -2,7 +2,7 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="cachewarm">
         <job name="bydn_improvedpagecache_warm" instance="Bydn\ImprovedPageCache\Cron\Warm" method="execute">
-            <schedule>*/5 * * * *</schedule>
+            <schedule>* * * * *</schedule>
         </job>
         <job name="bydn_improvedpagecache_warm_priority" instance="Bydn\ImprovedPageCache\Cron\WarmPriority" method="execute">
             <schedule>* * * * *</schedule>
