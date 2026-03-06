@@ -134,6 +134,33 @@
                 </item>
             </argument>
         </column>
+        <column name="url">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">text</item>
+                    <item name="label" xsi:type="string" translate="true">URL</item>
+                    <item name="sortOrder" xsi:type="number">65</item>
+                </item>
+            </argument>
+        </column>
+        <column name="time">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">textRange</item>
+                    <item name="label" xsi:type="string" translate="true">Time (s)</item>
+                    <item name="sortOrder" xsi:type="number">66</item>
+                </item>
+            </argument>
+        </column>
+        <column name="result_code">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">textRange</item>
+                    <item name="label" xsi:type="string" translate="true">HTTP Code</item>
+                    <item name="sortOrder" xsi:type="number">67</item>
+                </item>
+            </argument>
+        </column>
         <column name="updated_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
