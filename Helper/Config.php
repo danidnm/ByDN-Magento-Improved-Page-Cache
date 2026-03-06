@@ -19,6 +19,7 @@ class Config extends AbstractHelper
 {
     public const XML_PATH_ENABLED = 'bydn_improved_page_cache/general/enabled';
     public const XML_PATH_CONCURRENCY = 'bydn_improved_page_cache/general/concurrency';
+    public const XML_PATH_CLEANUP_DAYS = 'bydn_improved_page_cache/general/cleanup_days';
     public const XML_PATH_GRID_PER_PAGE = 'catalog/frontend/grid_per_page';
     public const XML_PATH_PRODUCT_USE_CATEGORIES = 'catalog/seo/product_use_categories';
 
@@ -45,12 +46,26 @@ class Config extends AbstractHelper
      */
     public function getConcurrency($storeId = null)
     {
-        $value = (int)$this->scopeConfig->getValue(
+        return (int)$this->scopeConfig->getValue(
             self::XML_PATH_CONCURRENCY,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
-        return $value > 0 ? $value : 5;
+    }
+
+    /**
+     * Get cleanup days
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getCleanupDays($storeId = null)
+    {
+        return (int)$this->scopeConfig->getValue(
+            self::XML_PATH_CLEANUP_DAYS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     /**
