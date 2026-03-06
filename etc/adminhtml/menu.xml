@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Bydn_ImprovedPageCache::cache_warming"
+             title="Cache Warming"
+             translate="title"
+             module="Bydn_ImprovedPageCache"
+             sortOrder="15"
+             parent="Magento_Backend::system_tools"
+             action="cache/warm"
+             resource="Bydn_ImprovedPageCache::cache_warming"/>
+    </menu>
+</config>
