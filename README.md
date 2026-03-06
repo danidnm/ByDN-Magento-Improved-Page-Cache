@@ -102,7 +102,7 @@ Go to:
 
     System => Tools => Cache Warming.
 
-<img alt="Add gift card product" width="100%" src="https://github.com/danidnm/ByDN-Magento-Improved-Page-Cache/blob/master/docs/images/stats.png"/>
+<img alt="Cache Warm Stats" width="100%" src="https://github.com/danidnm/ByDN-Magento-Improved-Page-Cache/blob/master/docs/stats.jpg"/>
 
 On this screen, you can see:
 - **URL**: The specific URL being warmed.
