@@ -10,5 +10,8 @@
         <job name="bydn_improvedpagecache_cleanup" instance="Bydn\ImprovedPageCache\Cron\Cleanup" method="execute">
             <schedule>15 3 * * *</schedule>
         </job>
+        <job name="bydn_improvedpagecache_stats" instance="Bydn\ImprovedPageCache\Cron\Stats" method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
     </group>
 </config>
