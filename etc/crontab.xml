@@ -2,16 +2,16 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="cachewarm">
         <job name="bydn_improvedpagecache_warm" instance="Bydn\ImprovedPageCache\Cron\Warm" method="execute">
-            <schedule>* * * * *</schedule>
+            <config_path>bydn_improved_page_cache/cron/warm_schedule</config_path>
         </job>
         <job name="bydn_improvedpagecache_warm_priority" instance="Bydn\ImprovedPageCache\Cron\WarmPriority" method="execute">
-            <schedule>* * * * *</schedule>
+            <config_path>bydn_improved_page_cache/cron/warm_priority_schedule</config_path>
         </job>
         <job name="bydn_improvedpagecache_cleanup" instance="Bydn\ImprovedPageCache\Cron\Cleanup" method="execute">
-            <schedule>15 3 * * *</schedule>
+            <config_path>bydn_improved_page_cache/cron/cleanup_schedule</config_path>
         </job>
         <job name="bydn_improvedpagecache_stats" instance="Bydn\ImprovedPageCache\Cron\Stats" method="execute">
-            <schedule>*/15 * * * *</schedule>
+            <config_path>bydn_improved_page_cache/cron/stats_schedule</config_path>
         </job>
     </group>
 </config>

@@ -16,6 +16,12 @@
                 <concurrency>5</concurrency>
                 <cleanup_days>7</cleanup_days>
             </general>
+            <cron>
+                <warm_schedule>* * * * *</warm_schedule>
+                <warm_priority_schedule>* * * * *</warm_priority_schedule>
+                <cleanup_schedule>15 3 * * *</cleanup_schedule>
+                <stats_schedule>*/15 * * * *</stats_schedule>
+            </cron>
         </bydn_improved_page_cache>
     </default>
 </config>
