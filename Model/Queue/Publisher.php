@@ -382,7 +382,8 @@ Class Publisher
      */
     private function extractAllCategoryIds() {
         $collection = $this->categoryCollectionFactory->create();
-        $collection->addAttributeToSelect('id');
+        $collection->addAttributeToSelect('entity_id');
+        $collection->addAttributeToFilter('entity_id', ['neq' => 2]);
         $collection->addIsActiveFilter();
         return $collection->getAllIds();
     }

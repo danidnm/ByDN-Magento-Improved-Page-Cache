@@ -7,3 +7,6 @@
 - Opciones de configuración
     - "No uso grupos de cliente"
     -
+
+- Considerar instalaciones con multiples root categories por tienda para no calentar categorías que no existen en determinadas tiendas
+- Calentar solo las categorías que estén activas en cada store
