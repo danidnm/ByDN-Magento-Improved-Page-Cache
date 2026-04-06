@@ -4,14 +4,16 @@
         <job name="bydn_improvedpagecache_warm" instance="Bydn\ImprovedPageCache\Cron\Warm" method="execute">
             <config_path>bydn_improved_page_cache/cron/warm_schedule</config_path>
         </job>
-        <job name="bydn_improvedpagecache_warm_priority" instance="Bydn\ImprovedPageCache\Cron\WarmPriority" method="execute">
-            <config_path>bydn_improved_page_cache/cron/warm_priority_schedule</config_path>
-        </job>
         <job name="bydn_improvedpagecache_cleanup" instance="Bydn\ImprovedPageCache\Cron\Cleanup" method="execute">
             <config_path>bydn_improved_page_cache/cron/cleanup_schedule</config_path>
         </job>
         <job name="bydn_improvedpagecache_stats" instance="Bydn\ImprovedPageCache\Cron\Stats" method="execute">
             <config_path>bydn_improved_page_cache/cron/stats_schedule</config_path>
+        </job>
+    </group>
+    <group id="cachewarm_priority">
+        <job name="bydn_improvedpagecache_warm_priority" instance="Bydn\ImprovedPageCache\Cron\WarmPriority" method="execute">
+            <config_path>bydn_improved_page_cache/cron/warm_priority_schedule</config_path>
         </job>
     </group>
 </config>
