@@ -32,6 +32,11 @@
                     <comment>Number of simultaneous parallel requests (default: 5)</comment>
                     <validate>validate-number validate-greater-than-zero</validate>
                 </field>
+                <field id="batch_size" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Batch Size</label>
+                    <comment>Number of items to process per batch (default: 50)</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
                 <field id="cleanup_days" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Cleanup Old Records (Days)</label>
                     <comment>Automatically delete completed or error records older than X days. (default: 7)</comment>

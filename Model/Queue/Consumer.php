@@ -165,7 +165,7 @@ class Consumer
         }
         $collection->setOrder('priority', 'DESC');
         $collection->setOrder('created_at', 'ASC');
-        $collection->setPageSize(250);
+        $collection->setPageSize($this->helperConfig->getBatchSize());
 
         // Items collection ARRAY
         $this->itemCollection = $collection->getItems();

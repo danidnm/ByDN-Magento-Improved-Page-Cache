@@ -14,6 +14,7 @@
                 <enabled>1</enabled>
                 <enable_smart_refresh>0</enable_smart_refresh>
                 <concurrency>5</concurrency>
+                <batch_size>50</batch_size>
                 <cleanup_days>7</cleanup_days>
             </general>
             <cron>
