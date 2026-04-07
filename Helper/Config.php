@@ -94,7 +94,7 @@ class Config extends AbstractHelper
      */
     public function getWaitTime($storeId = null)
     {
-        return (int)$this->scopeConfig->getValue(
+        return $this->scopeConfig->getValue(
             self::XML_PATH_WAIT_TIME,
             ScopeInterface::SCOPE_STORE,
             $storeId
