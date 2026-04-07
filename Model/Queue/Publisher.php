@@ -98,6 +98,16 @@ Class Publisher
     private $logger;
 
     /**
+     * @var array
+     */
+    private $inserts = [];
+
+    /**
+     * @var array
+     */
+    private $updates = [];
+
+    /**
      * @param StoreManagerInterface $storeManager
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param ProductCollectionFactory $productCollectionFactory
@@ -159,6 +169,9 @@ Class Publisher
         // Validate type
         $type = $this->validateType($type);
 
+        $this->inserts = [];
+        $this->updates = [];
+
         // Follow depending on type, validate params
         switch ($type) {
             case WarmTypes::HOME:
@@ -177,6 +190,8 @@ Class Publisher
                 $this->enqueueUrl($stores, $data, $priority);
                 break;
         }
+
+        $this->processQueueArrays();
     }
 
     /**
@@ -293,31 +308,48 @@ Class Publisher
      */
     private function enqueueEntity($storeId, $type, $info, $priority)
     {
-        /** @var \Bydn\ImprovedPageCache\Model\WarmItem|null $item */
-        $item = $this->checkDuplicated($storeId, $type, $info);
-        if ($item != null) {
-            if ($item->getPriority() < $priority) {
-                $item->setPriority($priority);
-                $this->warmItemResource->save($item);
+        // Create key for checking duplicates
+        $key = $storeId . '-' . $type . '-' . $info;
+
+        // If already to be inserted, check priority and update if needed
+        if (array_key_exists($key, $this->inserts)) {
+            if ($this->inserts[$key]['priority'] < $priority) {
+                $this->inserts[$key]['priority'] = $priority;
             }
             return;
         }
 
-        /** @var \Bydn\ImprovedPageCache\Model\WarmItem $warmItem */
-        $warmItem = $this->warmItemFactory->create();
-        $warmItem->setStoreId($storeId);
-        $warmItem->setType($type);
-        $warmItem->setInfo($info);
-        $warmItem->setPriority($priority);
-        $warmItem->setStatus(WarmStatus::NEW);
+        // If already in DB, check priority
+        $duplicate = $this->checkDuplicated($storeId, $type, $info);
+        if ($duplicate !== null) {
 
-        //$this->logger->debug(sprintf('Enqueuing entity: StoreId=%s, Type=%s, Info=%s, Priority=%s', $storeId, $type, $info, $priority));
+            // Check if the item is already set for update
+            if (array_key_exists($duplicate['entity_id'], $this->updates)) {
 
-        try {
-            $this->warmItemResource->save($warmItem);
-        } catch (\Exception $e) {
-            $this->logger->error($e->getMessage());
+                // If the new priority is higher than the pending update, update the priority
+                if ($this->updates[$duplicate['entity_id']]['priority'] < $priority) {
+                    $this->updates[$duplicate['entity_id']]['priority'] = $priority;
+                }
+            }
+            // The item is not already set for update, but it is in the DB ($duplicate) 
+            // Check the priority in DB and the new priority. If new is higher, set for update
+            elseif ($duplicate['priority'] < $priority) {
+                $this->updates[$duplicate['entity_id']] = [
+                    'entity_id' => $duplicate['entity_id'],
+                    'priority' => $priority
+                ];
+            }
+            return;
         }
+
+        // Not already in inserts and not in DB => insert new item for warming
+        $this->inserts[$key] = [
+            'store_id' => $storeId,
+            'type' => $type,
+            'info' => $info,
+            'priority' => $priority,
+            'status' => WarmStatus::NEW
+        ];
     }
 
     /**
@@ -325,14 +357,56 @@ Class Publisher
      */
     private function checkDuplicated($storeId, $type, $info)
     {
-        $collection = $this->warmItemCollectionFactory->create();
-        $collection->addFieldToFilter('store_id', $storeId)
-            ->addFieldToFilter('type', $type)
-            ->addFieldToFilter('info', $info)
-            ->addFieldToFilter('status', WarmStatus::NEW);
+        $connection = $this->warmItemResource->getConnection();
+        $table = $this->warmItemResource->getMainTable();
 
-        $item = $collection->getFirstItem();
-        return $item->getId() ? $item : null;
+        $select = $connection->select()
+            ->from($table, ['entity_id', 'priority'])
+            ->where('store_id = ?', (int)$storeId)
+            ->where('type = ?', $type)
+            ->where('info = ?', $info)
+            ->where('status = ?', WarmStatus::NEW)
+            ->limit(1);
+
+        $result = $connection->fetchRow($select);
+        return $result ? $result : null;
+    }
+
+    /**
+     * Process accumulated inserts and updates
+     */
+    private function processQueueArrays()
+    {
+        $connection = $this->warmItemResource->getConnection();
+        $table = $this->warmItemResource->getMainTable();
+
+        if (!empty($this->updates)) {
+            $chunks = array_chunk(array_values($this->updates), 1000);
+            foreach ($chunks as $chunk) {
+                try {
+                    foreach ($chunk as $updateData) {
+                        $connection->update(
+                            $table,
+                            ['priority' => $updateData['priority']],
+                            ['entity_id = ?' => $updateData['entity_id']]
+                        );
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error($e->getMessage());
+                }
+            }
+        }
+
+        if (!empty($this->inserts)) {
+            $chunks = array_chunk(array_values($this->inserts), 1000);
+            foreach ($chunks as $chunk) {
+                try {
+                    $connection->insertMultiple($table, $chunk);
+                } catch (\Exception $e) {
+                    $this->logger->error($e->getMessage());
+                }
+            }
+        }
     }
 
     /**
