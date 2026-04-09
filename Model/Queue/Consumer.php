@@ -14,8 +14,10 @@ namespace Bydn\ImprovedPageCache\Model\Queue;
 
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Store\Model\App\Emulation;
-use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Magento\Catalog\Model\ProductFactory;
+use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
+use Magento\Catalog\Model\CategoryFactory;
+use Magento\Catalog\Model\ResourceModel\Category as CategoryResource;
 use Magento\Cms\Api\PageRepositoryInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem\CollectionFactory as WarmItemCollectionFactory;
@@ -38,14 +40,24 @@ class Consumer
     private $emulation;
 
     /**
-     * @var ProductRepositoryInterface
+     * @var ProductFactory
      */
-    private $productRepository;
+    private $productFactory;
 
     /**
-     * @var CategoryRepositoryInterface
+     * @var ProductResource
      */
-    private $categoryRepository;
+    private $productResource;
+
+    /**
+     * @var CategoryFactory
+     */
+    private $categoryFactory;
+
+    /**
+     * @var CategoryResource
+     */
+    private $categoryResource;
 
     /**
      * @var PageRepositoryInterface
@@ -105,8 +117,10 @@ class Consumer
     /**
      * @param StoreManagerInterface $storeManager
      * @param Emulation $emulation
-     * @param ProductRepositoryInterface $productRepository
-     * @param CategoryRepositoryInterface $categoryRepository
+     * @param ProductFactory $productFactory
+     * @param ProductResource $productResource
+     * @param CategoryFactory $categoryFactory
+     * @param CategoryResource $categoryResource
      * @param PageRepositoryInterface $pageRepository
      * @param Curl $curl
      * @param WarmItemCollectionFactory $warmItemCollectionFactory
@@ -117,8 +131,10 @@ class Consumer
     public function __construct(
         StoreManagerInterface $storeManager,
         Emulation $emulation,
-        ProductRepositoryInterface $productRepository,
-        CategoryRepositoryInterface $categoryRepository,
+        ProductFactory $productFactory,
+        ProductResource $productResource,
+        CategoryFactory $categoryFactory,
+        CategoryResource $categoryResource,
         PageRepositoryInterface $pageRepository,
         Curl $curl,
         WarmItemCollectionFactory $warmItemCollectionFactory,
@@ -128,8 +144,10 @@ class Consumer
     ) {
         $this->storeManager = $storeManager;
         $this->emulation = $emulation;
-        $this->productRepository = $productRepository;
-        $this->categoryRepository = $categoryRepository;
+        $this->productFactory = $productFactory;
+        $this->productResource = $productResource;
+        $this->categoryFactory = $categoryFactory;
+        $this->categoryResource = $categoryResource;
         $this->pageRepository = $pageRepository;
         $this->curl = $curl;
         $this->warmItemCollectionFactory = $warmItemCollectionFactory;
@@ -218,6 +236,7 @@ class Consumer
 
             // Generate URL
             $url = $this->generateUrl($item);
+            $this->logger->info('Generated URL: ' . $url);
 
             // No URL => error
             if (!$url) {
@@ -258,7 +277,12 @@ class Consumer
 
         try {
             $store = $this->storeManager->getStore($storeId);
-            
+
+            $this->logger->info('Generate URL for item ' . $item->getId());
+            $this->logger->info('Item store: ' . $storeId);
+            $this->logger->info('Emulated store: ' . $this->currentEmulatedStoreId);
+            $this->logger->info('Base URL: ' . $store->getBaseUrl());
+
             switch ($type) {
                 case WarmTypes::HOME:
                     return $store->getBaseUrl();
@@ -274,13 +298,15 @@ class Consumer
                     $categoryId = isset($parts[1]) ? $parts[1] : 0;
                     
                     /** @var \Magento\Catalog\Model\Product $product */
-                    $product = $this->productRepository->getById($productId, false, $storeId);
+                    $product = $this->productFactory->create();
+                    $this->productResource->load($product, $productId);
                     if ($categoryId > 0) {
                         /** @var \Magento\Catalog\Model\Category $category */
-                        $category = $this->categoryRepository->get($categoryId, $storeId);
+                        $category = $this->categoryFactory->create();
+                        $this->categoryResource->load($category, $categoryId);
                         $product->setCategory($category);
                     }
-                    return $product->setStoreId($storeId)->getProductUrl();
+                    return $product->getProductUrl();
 
                 case WarmTypes::CATEGORIES:
                     $parts = explode(',', $info);
@@ -288,7 +314,8 @@ class Consumer
                     $pageNumber = isset($parts[1]) ? $parts[1] : 1;
                     
                     /** @var \Magento\Catalog\Model\Category $category */
-                    $category = $this->categoryRepository->get($categoryId, $storeId);
+                    $category = $this->categoryFactory->create();
+                    $this->categoryResource->load($category, $categoryId);
                     $url = $category->getUrl();
                     if ($pageNumber > 1) {
                         $url .= (strpos($url, '?') === false ? '?' : '&') . 'p=' . $pageNumber;
@@ -310,9 +337,13 @@ class Consumer
      */
     private function manageEmulation($storeId)
     {
+        $this->logger->info('manageEmulation: current: ' . $this->currentEmulatedStoreId . ' - new: ' . $storeId);
+        
         // Manage stop emulation
-        if ($storeId == 0) {
+        if (!$storeId) {
+            $this->logger->info('No store given');
             if ($this->currentEmulatedStoreId !== null) {
+                $this->logger->info('Stopping emulation');
                 $this->emulation->stopEnvironmentEmulation();
             }
             return null;
@@ -320,14 +351,18 @@ class Consumer
         
         // Manage start or change emulation
         if ($this->currentEmulatedStoreId === null) {
+            $this->logger->info('Starting emulation');
             $this->emulation->startEnvironmentEmulation($storeId);
         } 
         else if ($this->currentEmulatedStoreId != $storeId) {
+            $this->logger->info('Switch emulation from ' . $this->currentEmulatedStoreId . ' to ' . $storeId);
             $this->emulation->stopEnvironmentEmulation();
             $this->emulation->startEnvironmentEmulation($storeId);
         }
+
         return $storeId;
     }
+
     /**
      * Process a batch of URLs
      *
@@ -453,7 +488,8 @@ class Consumer
                 'http_code' => $httpCode,
                 'time' => $execution_time
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             $this->logger->error($e->getMessage());
             return [
                 'status' => false,
