@@ -16,6 +16,23 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
+        <!-- Consumer: next pending items by priority -->
+        <index referenceId="BYDN_WARM_ITEM_STATUS_PRIORITY_CREATED_AT" indexType="btree">
+            <column name="status"/>
+            <column name="priority"/>
+            <column name="created_at"/>
+        </index>
+        <!-- Publisher: pending items of a store and type, to avoid duplicates -->
+        <index referenceId="BYDN_WARM_ITEM_STATUS_STORE_ID_TYPE" indexType="btree">
+            <column name="status"/>
+            <column name="store_id"/>
+            <column name="type"/>
+        </index>
+        <!-- Cleanup: done and error items older than the configured days -->
+        <index referenceId="BYDN_WARM_ITEM_STATUS_CREATED_AT" indexType="btree">
+            <column name="status"/>
+            <column name="created_at"/>
+        </index>
     </table>
     <table name="bydn_warm_stats">
         <column xsi:type="bigint" name="id" nullable="false" identity="true" padding="10" unsigned="true" comment="Id"/>

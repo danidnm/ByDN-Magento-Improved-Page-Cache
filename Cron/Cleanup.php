@@ -13,7 +13,6 @@
 namespace Bydn\ImprovedPageCache\Cron;
 
 use Bydn\ImprovedPageCache\Helper\Config;
-use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem\CollectionFactory;
 use Bydn\ImprovedPageCache\Model\Source\WarmItem\Status;
 use Bydn\ImprovedPageCache\Model\ResourceModel\WarmItem as WarmItemResource;
 use Psr\Log\LoggerInterface;
@@ -21,14 +20,14 @@ use Psr\Log\LoggerInterface;
 class Cleanup
 {
     /**
+     * Items deleted per query
+     */
+    private const DELETE_CHUNK_SIZE = 10000;
+
+    /**
      * @var Config
      */
     private $config;
-
-    /**
-     * @var CollectionFactory
-     */
-    private $collectionFactory;
 
     /**
      * @var WarmItemResource
@@ -42,18 +41,15 @@ class Cleanup
 
     /**
      * @param Config $config
-     * @param CollectionFactory $collectionFactory
      * @param WarmItemResource $warmItemResource
      * @param LoggerInterface $logger
      */
     public function __construct(
         Config $config,
-        CollectionFactory $collectionFactory,
         WarmItemResource $warmItemResource,
         LoggerInterface $logger
     ) {
         $this->config = $config;
-        $this->collectionFactory = $collectionFactory;
         $this->warmItemResource = $warmItemResource;
         $this->logger = $logger;
     }
@@ -74,18 +70,27 @@ class Cleanup
         $date->modify("-" . $days . " days");
         $formattedDate = $date->format('Y-m-d H:i:s');
 
-        $collection = $this->collectionFactory->create();
-        $collection->addFieldToFilter('status', ['in' => [Status::DONE, Status::ERROR]]);
-        $collection->addFieldToFilter('created_at', ['lt' => $formattedDate]);
+        // Delete in chunks by id: the table may hold hundreds of thousands of old items, and loading
+        // and deleting them one by one through the resource model took too long
+        $connection = $this->warmItemResource->getConnection();
+        $table = $this->warmItemResource->getMainTable();
+        $select = $connection->select()
+            ->from($table, ['entity_id'])
+            ->where('status IN (?)', [Status::DONE, Status::ERROR])
+            ->where('created_at < ?', $formattedDate)
+            ->limit(self::DELETE_CHUNK_SIZE);
 
         $count = 0;
-        foreach ($collection as $item) {
-            try {
-                $this->warmItemResource->delete($item);
-                $count++;
-            } catch (\Exception $e) {
-                $this->logger->error('[Bydn_ImprovedPageCache] - Error deleting warm item ID ' . $item->getId() . ': ' . $e->getMessage());
+        try {
+            while ($ids = $connection->fetchCol($select)) {
+                $deleted = $connection->delete($table, ['entity_id IN (?)' => $ids]);
+                if ($deleted === 0) {
+                    break;
+                }
+                $count += $deleted;
             }
+        } catch (\Exception $e) {
+            $this->logger->error('[Bydn_ImprovedPageCache] - Error cleaning up old warm items: ' . $e->getMessage());
         }
 
         if ($count > 0) {

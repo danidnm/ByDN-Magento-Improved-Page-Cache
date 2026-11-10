@@ -7,8 +7,28 @@
             "store_id": true,
             "priority": true,
             "status": true,
+            "url": true,
+            "time": true,
+            "result_code": true,
             "created_at": true,
             "updated_at": true
+        },
+        "index": {
+            "BYDN_WARM_ITEM_STATUS_PRIORITY_CREATED_AT": true,
+            "BYDN_WARM_ITEM_STATUS_STORE_ID_TYPE": true,
+            "BYDN_WARM_ITEM_STATUS_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "bydn_warm_stats": {
+        "column": {
+            "id": true,
+            "created_at": true,
+            "pending_items": true,
+            "done_items": true,
+            "error_items": true
         },
         "constraint": {
             "PRIMARY": true

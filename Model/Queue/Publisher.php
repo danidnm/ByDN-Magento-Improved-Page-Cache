@@ -108,6 +108,14 @@ Class Publisher
     private $updates = [];
 
     /**
+     * Pending (NEW) items already in the queue, loaded once per store and type to check duplicates:
+     * [storeId-type => [info => ['entity_id' => ..., 'priority' => ...]]]
+     *
+     * @var array
+     */
+    private $pendingItems = [];
+
+    /**
      * @param StoreManagerInterface $storeManager
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param ProductCollectionFactory $productCollectionFactory
@@ -171,6 +179,7 @@ Class Publisher
 
         $this->inserts = [];
         $this->updates = [];
+        $this->pendingItems = [];
 
         // Follow depending on type, validate params
         switch ($type) {
@@ -354,23 +363,53 @@ Class Publisher
     }
 
     /**
-     * Check if a record with same parameters already exists
+     * Check if a pending record with same parameters already exists
+     *
+     * Pending items are loaded once per store and type instead of querying the table for each entity:
+     * enqueuing all categories or products means tens of thousands of entities, and the table also
+     * keeps the done items history, so one query per entity took hours.
      */
     private function checkDuplicated($storeId, $type, $info)
+    {
+        $key = $storeId . '-' . $type;
+        if (!array_key_exists($key, $this->pendingItems)) {
+            $this->pendingItems[$key] = $this->loadPendingItems($storeId, $type);
+        }
+
+        return $this->pendingItems[$key][(string)$info] ?? null;
+    }
+
+    /**
+     * Load pending (NEW) items of a store and type, indexed by info
+     *
+     * @param int|string $storeId
+     * @param string $type
+     * @return array
+     */
+    private function loadPendingItems($storeId, $type)
     {
         $connection = $this->warmItemResource->getConnection();
         $table = $this->warmItemResource->getMainTable();
 
         $select = $connection->select()
-            ->from($table, ['entity_id', 'priority'])
+            ->from($table, ['info', 'entity_id', 'priority'])
+            ->where('status = ?', WarmStatus::NEW)
             ->where('store_id = ?', (int)$storeId)
             ->where('type = ?', $type)
-            ->where('info = ?', $info)
-            ->where('status = ?', WarmStatus::NEW)
-            ->limit(1);
+            ->order('entity_id ASC');
 
-        $result = $connection->fetchRow($select);
-        return $result ? $result : null;
+        // Same item enqueued twice (should not happen): keep the first one, as the former LIMIT 1 query did
+        $items = [];
+        foreach ($connection->fetchAll($select) as $row) {
+            if (!array_key_exists($row['info'], $items)) {
+                $items[$row['info']] = [
+                    'entity_id' => $row['entity_id'],
+                    'priority' => $row['priority']
+                ];
+            }
+        }
+
+        return $items;
     }
 
     /**
